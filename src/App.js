@@ -41,7 +41,7 @@ class App extends React.Component {
               isLoading: false,
               hasMore: response.data.hasMoreData
             },
-            () => {}
+            this.createUniqueActorsAndGenreSet
           );
         })
         .catch(function(error) {
