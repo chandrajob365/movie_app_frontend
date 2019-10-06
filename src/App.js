@@ -8,24 +8,47 @@ import AppToolBar from "./AppToolBar";
 class App extends React.Component {
   constructor() {
     super();
-    this.state = {};
+    this.state = { isLoading: false };
   }
   componentDidMount() {
-    axios
-      .get("http://localhost:4444/movies")
-      .then(response => {
-        // handle success
-        this.setState(
-          { movies: response.data, originalMoviesSet: response.data },
-          this.createUniqueActorsAndGenreSet
-        );
-      })
-      .catch(function(error) {
-        // handle error
-        console.log("err : ", error);
-      });
+    this.paginatedFetch();
   }
 
+  paginatedFetch = () => {
+    const pageNumber =
+      this.state.pageNumber && this.state.pageNumber !== 0
+        ? this.state.pageNumber + 1
+        : 0;
+    const currentMovieList = this.state.movies || [];
+    const currentOriginalMovieList = this.state.originalMoviesSet || [];
+    this.setState({ isLoading: true });
+    !this.state.isLoading &&
+      axios
+        .get("http://localhost:4444/fetchPaginatedData", {
+          params: {
+            page: pageNumber
+          }
+        })
+        .then(response => {
+          this.setState(
+            {
+              movies: [...currentMovieList, ...response.data.content],
+              originalMoviesSet: [
+                ...currentOriginalMovieList,
+                ...response.data.content
+              ],
+              pageNumber: pageNumber || pageNumber + 1,
+              isLoading: false,
+              hasMore: response.data.hasMoreData
+            },
+            () => {}
+          );
+        })
+        .catch(function(error) {
+          // handle error
+          console.log("err : ", error);
+        });
+  };
   isEmpty = data => data.length === 0;
 
   filterMovies = selectedState => {
@@ -128,7 +151,12 @@ class App extends React.Component {
           genres={this.state.genres || []}
         />
         {this.state && this.state.movies && this.state.movies.length > 0 && (
-          <AppContent movies={this.state.movies} />
+          <AppContent
+            paginatedFetch={this.paginatedFetch}
+            movies={this.state.movies}
+            isLoading={this.state.isLoading}
+            hasMore={this.state.hasMore}
+          />
         )}
       </div>
     );
